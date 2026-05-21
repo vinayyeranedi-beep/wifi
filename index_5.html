@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Hotspot Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#07080f;--s1:#0f1120;--s2:#181b2e;--s3:#1f2338;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#eef0ff;--t2:#7880a8;--t3:#3d4260;
+  --green:#00e5a0;--gd:rgba(0,229,160,0.12);
+  --blue:#4f9eff;--bd:rgba(79,158,255,0.12);
+  --red:#ff5566;--rd:rgba(255,85,102,0.1);
+  --amber:#ffb340;
+  --r:18px;--rs:12px;
+}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden}
+body{max-width:430px;margin:0 auto;min-height:100vh}
+
+/* BG GLOW */
+.bg-glow{position:fixed;top:-80px;right:-60px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,0.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+.bg-glow2{position:fixed;bottom:-100px;left:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(79,158,255,0.06) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* STATUS BAR */
+.sb{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 6px;position:relative;z-index:2}
+.sb-time{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.sb-icons{display:flex;gap:5px;align-items:center}
+
+/* HEADER */
+.hdr{padding:8px 20px 0;position:relative;z-index:2}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-.03em}
+.page-title span{color:var(--green)}
+.role-badge{font-size:10px;font-weight:500;background:var(--gd);color:var(--green);padding:4px 10px;border-radius:20px;border:0.5px solid rgba(0,229,160,0.2);letter-spacing:.04em;text-transform:uppercase}
+
+/* HOTSPOT TOGGLE CARD */
+.hs-card{margin:16px 16px 10px;background:var(--s1);border:0.5px solid var(--border2);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;z-index:2}
+.hs-glow{position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,0.15),transparent 70%);transition:.4s;pointer-events:none}
+.hs-card.off .hs-glow{background:radial-gradient(circle,rgba(255,85,102,0.12),transparent 70%)}
+.hs-row{display:flex;align-items:center;justify-content:space-between}
+.hs-left{display:flex;align-items:center;gap:13px}
+.hs-ico{width:46px;height:46px;border-radius:14px;background:var(--gd);border:0.5px solid rgba(0,229,160,0.2);display:flex;align-items:center;justify-content:center;transition:.3s;flex-shrink:0}
+.hs-card.off .hs-ico{background:var(--rd);border-color:rgba(255,85,102,0.2)}
+.hs-ico svg{width:22px;height:22px;stroke:var(--green);transition:.3s;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+.hs-card.off .hs-ico svg{stroke:var(--red)}
+.hs-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.hs-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.hs-sub b{color:var(--green);font-weight:500}
+.hs-card.off .hs-sub b{color:var(--red)}
+
+/* TOGGLE SWITCH */
+.tgl{position:relative;width:54px;height:30px;cursor:pointer;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0;position:absolute}
+.tgl-track{position:absolute;inset:0;border-radius:30px;background:var(--s3);border:1.5px solid var(--border2);transition:.3s}
+.tgl input:checked+.tgl-track{background:var(--green);border-color:var(--green)}
+.tgl-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--t2);transition:.3s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.tgl input:checked~.tgl-thumb{left:27px;background:#fff}
+
+.hs-footer{margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.hs-ssid{font-family:'DM Mono',monospace;font-size:12px;color:var(--t2)}
+.hs-conn{font-size:12px;color:var(--t3)}
+
+/* QR SECTION */
+.qr-section{margin:0 16px 12px;background:var(--s1);border:0.5px solid var(--border2);border-radius:var(--r);padding:16px;z-index:2;position:relative}
+.qr-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.qr-title span{font-size:10px;background:var(--bd);color:var(--blue);padding:3px 8px;border-radius:20px;font-family:'DM Sans',sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.qr-wrap{display:flex;gap:14px;align-items:center}
+#qr-canvas{border-radius:10px;background:#fff;padding:6px;flex-shrink:0}
+.qr-info{flex:1}
+.qr-desc{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px}
+.qr-url{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);word-break:break-all;background:var(--bd);padding:6px 8px;border-radius:8px;border:0.5px solid rgba(79,158,255,0.15)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 16px 12px;z-index:2;position:relative}
+.stat{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--rs);padding:14px}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:3px;font-weight:500}
+.stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
+.stat-val.g{color:var(--green)}
+.stat-val.b{color:var(--blue)}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin:0 16px 12px;background:var(--s1);border-radius:var(--rs);padding:3px;border:0.5px solid var(--border);z-index:2;position:relative}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:500;text-align:center;border:none;background:none;color:var(--t3);cursor:pointer;border-radius:9px;transition:.2s;font-family:'DM Sans',sans-serif}
+.tab.active{background:var(--s2);color:var(--text)}
+
+/* PANELS */
+.section{padding:0 16px;z-index:2;position:relative}
+.panel{display:none}.panel.active{display:block}
+.sec-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:10px;font-weight:500}
+
+/* REQUEST CARD */
+.rq-card{background:var(--s1);border:0.5px solid var(--border2);border-radius:var(--r);padding:14px;margin-bottom:8px;animation:pop .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.rq-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.dv-av{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif}
+.rq-meta{flex:1;min-width:0}
+.rq-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rq-mac{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin-top:2px}
+.rq-time{font-size:11px;color:var(--t3);flex-shrink:0}
+.rq-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px}
+.btn{border:none;border-radius:var(--rs);padding:11px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:.01em}
+.btn:active{transform:scale(.95)}
+.btn-once{background:var(--s3);color:var(--t2);border:0.5px solid var(--border2)}
+.btn-always{background:var(--gd);color:var(--green);border:0.5px solid rgba(0,229,160,0.25)}
+.btn-deny{background:var(--rd);color:var(--red);border:0.5px solid rgba(255,85,102,0.2);width:100%}
+
+/* TRUSTED CARD */
+.tr-card{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.tr-meta{flex:1;min-width:0}
+.tr-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-mac{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin-top:2px}
+.auto-pill{font-size:10px;font-weight:600;background:var(--gd);color:var(--green);padding:4px 9px;border-radius:20px;flex-shrink:0;border:0.5px solid rgba(0,229,160,0.2)}
+.rev-btn{width:32px;height:32px;border-radius:9px;background:none;border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:16px;transition:.15s;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.rev-btn:active{background:var(--rd);color:var(--red);border-color:var(--red)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--t2);font-size:13px;line-height:1.7}
+.empty-ico{font-size:40px;margin-bottom:10px;display:block}
+
+/* INCOMING ALERT */
+.alert-overlay{position:fixed;inset:0;background:rgba(7,8,15,0.85);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
+.alert-overlay.show{opacity:1;pointer-events:all}
+.alert-sheet{background:var(--s2);border:0.5px solid var(--border2);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;transform:translateY(100%);transition:.4s cubic-bezier(.34,1.56,.64,1)}
+.alert-overlay.show .alert-sheet{transform:translateY(0)}
+.alert-handle{width:36px;height:4px;background:var(--border2);border-radius:4px;margin:0 auto 20px}
+.alert-ico{width:60px;height:60px;border-radius:18px;background:var(--gd);border:0.5px solid rgba(0,229,160,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px}
+.alert-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-align:center;margin-bottom:6px}
+.alert-sub{font-size:13px;color:var(--t2);text-align:center;margin-bottom:20px;line-height:1.5}
+.alert-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.alert-btn-once{background:var(--s3);color:var(--t2);border:0.5px solid var(--border2);border-radius:var(--rs);padding:14px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.alert-btn-always{background:var(--green);color:#07080f;border:none;border-radius:var(--rs);padding:14px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer}
+.alert-btn-deny{width:100%;margin-top:8px;background:none;border:0.5px solid var(--border);color:var(--red);border-radius:var(--rs);padding:12px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;font-weight:500;padding:10px 18px;border-radius:30px;transition:.35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;z-index:200;opacity:0;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* PULSE RING */
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,229,160,0.4)}70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pulsing{animation:pulse 1.2s infinite}
+
+.pad{height:24px}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="bg-glow2"></div>
+
+<!-- STATUS BAR -->
+<div class="sb">
+  <span class="sb-time" id="clk">9:41</span>
+  <div class="sb-icons">
+    <svg width="15" height="11" viewBox="0 0 15 11"><rect x="0" y="3" width="3" height="8" rx="1" fill="#eef0ff"/><rect x="4" y="2" width="3" height="9" rx="1" fill="#eef0ff"/><rect x="8" y="1" width="3" height="10" rx="1" fill="#eef0ff"/><rect x="12" y="0" width="3" height="11" rx="1" fill="#eef0ff"/></svg>
+    <svg width="16" height="12" viewBox="0 0 24 16" fill="none" stroke="#eef0ff" stroke-width="2"><path d="M1.5 5C5 1.5 9 0 12 0s7 1.5 10.5 5"/><path d="M5 9.5C7 7.5 9.5 6.5 12 6.5s5 1 7 3"/><path d="M8.5 13.5C9.8 12.2 10.9 11.5 12 11.5s2.2.7 3.5 2"/><circle cx="12" cy="15.5" r="1.5" fill="#eef0ff" stroke="none"/></svg>
+    <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="#eef0ff" stroke-opacity=".35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#eef0ff"/><path d="M23 4.5v3a1.5 1.5 0 000-3z" fill="#eef0ff" fill-opacity=".4"/></svg>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div class="page-title">Hot<span>spot</span></div>
+    <span class="role-badge">Admin</span>
+  </div>
+</div>
+
+<!-- HOTSPOT CARD -->
+<div class="hs-card off" id="hsc">
+  <div class="hs-glow"></div>
+  <div class="hs-row">
+    <div class="hs-left">
+      <div class="hs-ico">
+        <svg viewBox="0 0 24 24"><path d="M1.5 8.5C5.2 4.8 9.4 3 12 3s6.8 1.8 10.5 5.5"/><path d="M5 12a9.9 9.9 0 017-2.9 9.9 9.9 0 017 2.9"/><path d="M8.5 15.5a5 5 0 013.5-1.5 5 5 0 013.5 1.5"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="hs-title">Personal Hotspot</div>
+        <div class="hs-sub"><b id="hs-word">Off</b></div>
+      </div>
+    </div>
+    <label class="tgl">
+      <input type="checkbox" id="hst" onchange="toggleHS()">
+      <div class="tgl-track"></div>
+      <div class="tgl-thumb"></div>
+    </label>
+  </div>
+  <div class="hs-footer">
+    <span class="hs-ssid">📡 <span id="ssid-lbl">MyHotspot</span></span>
+    <span class="hs-conn" id="conn-lbl">0 connected</span>
+  </div>
+</div>
+
+<!-- QR SECTION -->
+<div class="qr-section">
+  <div class="qr-title">Sister's Link <span>Share Once</span></div>
+  <div class="qr-wrap">
+    <canvas id="qr-canvas" width="90" height="90"></canvas>
+    <div class="qr-info">
+      <div class="qr-desc">Share this QR with your sister. She scans it once and can request hotspot anytime.</div>
+      <div class="qr-url" id="req-url">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-lbl">Trusted</div><div class="stat-val g" id="s-trust">0</div></div>
+  <div class="stat"><div class="stat-lbl">Pending</div><div class="stat-val b" id="s-pend">0</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" id="tab-rq" onclick="sw('rq')">Requests</button>
+  <button class="tab" id="tab-tr" onclick="sw('tr')">Trusted</button>
+</div>
+
+<!-- PANELS -->
+<div class="section">
+  <div class="panel active" id="panel-rq">
+    <div class="sec-lbl">Waiting for approval</div>
+    <div id="rq-list"></div>
+    <div id="rq-empty" class="empty" style="display:none"><span class="empty-ico">✅</span>No pending requests</div>
+  </div>
+  <div class="panel" id="panel-tr">
+    <div class="sec-lbl">Auto-connect always on</div>
+    <div id="tr-list"></div>
+    <div id="tr-empty" class="empty" style="display:none"><span class="empty-ico">🔐</span>No trusted devices yet.<br>Tap <strong>Always</strong> to add one.</div>
+  </div>
+</div>
+<div class="pad"></div>
+
+<!-- INCOMING ALERT -->
+<div class="alert-overlay" id="alert">
+  <div class="alert-sheet">
+    <div class="alert-handle"></div>
+    <div class="alert-ico">📶</div>
+    <div class="alert-title" id="al-title">Connection Request</div>
+    <div class="alert-sub" id="al-sub">wants to use your hotspot</div>
+    <div class="alert-btns">
+      <button class="alert-btn-once" onclick="alertAct('once')">Once</button>
+      <button class="alert-btn-always pulsing" onclick="alertAct('always')">★ Always</button>
+    </div>
+    <button class="alert-btn-deny" onclick="alertAct('deny')">Deny</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- QR GENERATOR (simple, no external lib) -->
+<script>
+// Minimal QR code generator using data URL approach
+// We'll draw a placeholder QR and show the actual URL
+function drawSimpleQR(canvas, text) {
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Draw a visual representation
+  ctx.fillStyle = '#07080f';
+  const cells = 21;
+  const cs = size / cells;
+  
+  // Use text hash to create a unique but consistent pattern
+  let hash = 0;
+  for(let i=0;i<text.length;i++) hash = ((hash<<5)-hash)+text.charCodeAt(i), hash|=0;
+  
+  // Fixed finder patterns (corners)
+  function finder(ox,oy){
+    for(let r=0;r<7;r++) for(let c=0;c<7;c++){
+      const border=(r===0||r===6||c===0||c===6);
+      const inner=(r>=2&&r<=4&&c>=2&&c<=4);
+      if(border||inner){ctx.fillStyle='#07080f';ctx.fillRect((ox+c)*cs,(oy+r)*cs,cs,cs)}
+      else{ctx.fillStyle='#fff';ctx.fillRect((ox+c)*cs,(oy+r)*cs,cs,cs)}
+    }
+  }
+  finder(0,0); finder(14,0); finder(0,14);
+  
+  // Data modules from hash
+  const rand=(n)=>{let x=Math.sin(hash+n)*10000;return x-Math.floor(x)};
+  for(let r=0;r<cells;r++) for(let c=0;c<cells;c++){
+    const inFinder=(r<9&&c<9)||(r<9&&c>12)||(r>12&&c<9);
+    if(!inFinder && rand(r*cells+c) > 0.5){
+      ctx.fillStyle='#07080f';
+      ctx.fillRect(c*cs,r*cs,cs,cs);
+    }
+  }
+}
+
+// --- STATE ---
+const COLORS=[
+  {bg:'rgba(79,158,255,0.15)',fg:'#4f9eff'},
+  {bg:'rgba(0,229,160,0.15)',fg:'#00e5a0'},
+  {bg:'rgba(255,179,64,0.15)',fg:'#ffb340'},
+  {bg:'rgba(200,130,255,0.15)',fg:'#c882ff'},
+];
+
+let hsOn = false;
+let requests = [];
+let trusted = JSON.parse(localStorage.getItem('hs_trusted')||'[]');
+let connCount = 0;
+let pendingAlert = null;
+let idCounter = Date.now();
+
+// --- CLOCK ---
+function tick(){const n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')}
+tick(); setInterval(tick,15000);
+
+// --- HOTSPOT ---
+function toggleHS(){
+  hsOn = document.getElementById('hst').checked;
+  const c=document.getElementById('hsc');
+  c.classList.toggle('off',!hsOn);
+  document.getElementById('hs-word').textContent=hsOn?'Active · sharing':'Off';
+  if(!hsOn){connCount=0;updateConn();}
+  toast(hsOn?'🟢 Hotspot ON':'🔴 Hotspot OFF');
+  broadcast({type:'hs_status',on:hsOn});
+}
+
+function turnOnHS(){
+  if(hsOn) return;
+  document.getElementById('hst').checked=true;
+  hsOn=true;
+  document.getElementById('hsc').classList.remove('off');
+  document.getElementById('hs-word').textContent='Active · sharing';
+  broadcast({type:'hs_status',on:true});
+}
+
+function updateConn(){document.getElementById('conn-lbl').textContent=connCount+' connected'}
+
+// --- QR & URL ---
+function setupQR(){
+  const base = location.href.replace('index.html','').replace(/\/$/, '');
+  const url = base + '/request.html';
+  document.getElementById('req-url').textContent = url;
+  const canvas = document.getElementById('qr-canvas');
+  drawSimpleQR(canvas, url);
+}
+
+// --- BROADCAST (localStorage events between tabs) ---
+function broadcast(data){
+  localStorage.setItem('hs_msg', JSON.stringify({...data, _t: Date.now()}));
+}
+
+window.addEventListener('storage', e => {
+  if(e.key !== 'hs_msg') return;
+  const d = JSON.parse(e.newValue||'{}');
+  if(d.type === 'request') handleIncoming(d);
+  if(d.type === 'cancel') dismissAlert();
+});
+
+function handleIncoming(d){
+  // Check if trusted
+  const isTrusted = trusted.some(t => t.id === d.deviceId);
+  if(isTrusted){
+    turnOnHS();
+    connCount++;
+    updateConn();
+    toast('⚡ '+d.name+' auto-connected');
+    broadcast({type:'approved', deviceId: d.deviceId, auto:true});
+    renderAll();
+    return;
+  }
+  // Show alert
+  pendingAlert = d;
+  document.getElementById('al-title').textContent = d.name;
+  document.getElementById('al-sub').textContent = 'wants to use your hotspot';
+  document.getElementById('alert').classList.add('show');
+  // Play beep
+  try{
+    const ac=new AudioContext();
+    const osc=ac.createOscillator();
+    const g=ac.createGain();
+    osc.connect(g); g.connect(ac.destination);
+    osc.frequency.value=880; g.gain.setValueAtTime(0.3,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);
+    osc.start(); osc.stop(ac.currentTime+0.4);
+  }catch(e){}
+}
+
+function alertAct(action){
+  if(!pendingAlert) return;
+  const d = pendingAlert;
+  pendingAlert = null;
+  document.getElementById('alert').classList.remove('show');
+
+  if(action==='deny'){
+    toast('🚫 Denied: '+d.name);
+    broadcast({type:'denied', deviceId: d.deviceId});
+    return;
+  }
+  if(action==='always'){
+    if(!trusted.some(t=>t.id===d.deviceId)){
+      trusted.push({id:d.deviceId, name:d.name, color:d.color||0});
+      localStorage.setItem('hs_trusted', JSON.stringify(trusted));
+    }
+    toast('⭐ '+d.name+' trusted forever');
+  } else {
+    toast('✅ '+d.name+' connected (once)');
+  }
+  turnOnHS();
+  connCount++;
+  updateConn();
+  broadcast({type:'approved', deviceId: d.deviceId, auto: action==='always'});
+  renderAll();
+}
+
+function dismissAlert(){
+  document.getElementById('alert').classList.remove('show');
+  pendingAlert = null;
+}
+
+function revoke(id){
+  const d = trusted.find(x=>x.id===id);
+  trusted = trusted.filter(x=>x.id!==id);
+  localStorage.setItem('hs_trusted', JSON.stringify(trusted));
+  if(d) toast('🗑 '+d.name+' removed');
+  renderAll();
+}
+
+// --- TABS ---
+function sw(tab){
+  ['rq','tr'].forEach(t=>{
+    document.getElementById('panel-'+t).classList.toggle('active',t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+// --- RENDER ---
+function initials(n){return n.split(/[\s'_-]+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'??'}
+
+function renderAll(){
+  document.getElementById('s-trust').textContent = trusted.length;
+  document.getElementById('s-pend').textContent = requests.length;
+
+  // Requests
+  const rl=document.getElementById('rq-list'), re=document.getElementById('rq-empty');
+  if(!requests.length){rl.innerHTML='';re.style.display='block';}
+  else{
+    re.style.display='none';
+    rl.innerHTML=requests.map(r=>{
+      const c=COLORS[r.color%COLORS.length];
+      return`<div class="rq-card">
+        <div class="rq-top">
+          <div class="dv-av" style="background:${c.bg};color:${c.fg}">${initials(r.name)}</div>
+          <div class="rq-meta"><div class="rq-name">${r.name}</div><div class="rq-mac">${r.id}</div></div>
+          <div class="rq-time">${r.time}</div>
+        </div>
+        <div class="rq-btns">
+          <button class="btn btn-once" onclick="approveReq('${r.id}','once')">Once</button>
+          <button class="btn btn-always" onclick="approveReq('${r.id}','always')">★ Always</button>
+        </div>
+        <button class="btn btn-deny" onclick="denyReq('${r.id}')">Deny</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Trusted
+  const tl=document.getElementById('tr-list'), te=document.getElementById('tr-empty');
+  if(!trusted.length){tl.innerHTML='';te.style.display='block';}
+  else{
+    te.style.display='none';
+    tl.innerHTML=trusted.map(d=>{
+      const c=COLORS[(d.color||0)%COLORS.length];
+      return`<div class="tr-card">
+        <div class="dv-av" style="background:${c.bg};color:${c.fg};width:36px;height:36px;border-radius:10px;font-size:12px">${initials(d.name)}</div>
+        <div class="tr-meta"><div class="tr-name">${d.name}</div><div class="tr-mac">${d.id}</div></div>
+        <span class="auto-pill">Auto-ON</span>
+        <button class="rev-btn" onclick="revoke('${d.id}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+function approveReq(id, action){
+  const r=requests.find(x=>x.id===id);
+  if(!r) return;
+  requests=requests.filter(x=>x.id!==id);
+  if(action==='always'){
+    if(!trusted.some(t=>t.id===id)) trusted.push({id,name:r.name,color:r.color||0});
+    localStorage.setItem('hs_trusted',JSON.stringify(trusted));
+    toast('⭐ '+r.name+' trusted forever');
+  } else toast('✅ '+r.name+' connected (once)');
+  turnOnHS(); connCount++; updateConn();
+  broadcast({type:'approved',deviceId:id,auto:action==='always'});
+  renderAll();
+}
+
+function denyReq(id){
+  const r=requests.find(x=>x.id===id);
+  requests=requests.filter(x=>x.id!==id);
+  if(r){toast('🚫 Denied: '+r.name);broadcast({type:'denied',deviceId:id});}
+  renderAll();
+}
+
+// --- TOAST ---
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._to); t._to=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+setupQR();
+renderAll();
+</script>
+</body>
+</html>

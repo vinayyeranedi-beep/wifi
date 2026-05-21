@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Request Hotspot</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#07080f;--s1:#0f1120;--s2:#181b2e;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#eef0ff;--t2:#7880a8;--t3:#3d4260;
+  --green:#00e5a0;--gd:rgba(0,229,160,0.12);
+  --blue:#4f9eff;--bd:rgba(79,158,255,0.12);
+  --red:#ff5566;--rd:rgba(255,85,102,0.1);
+  --r:20px;
+}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden}
+body{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px}
+
+.bg-glow{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,0.05) 0%,transparent 65%);pointer-events:none;transition:1s}
+.bg-glow.active{background:radial-gradient(circle,rgba(0,229,160,0.12) 0%,transparent 65%)}
+.bg-glow.denied{background:radial-gradient(circle,rgba(255,85,102,0.1) 0%,transparent 65%)}
+
+/* SETUP SCREEN */
+.screen{width:100%;display:none;flex-direction:column;align-items:center;text-align:center;animation:fadein .4s ease}
+.screen.active{display:flex}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* NAME SETUP */
+.setup-ico{font-size:56px;margin-bottom:20px}
+.setup-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.setup-sub{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:28px;max-width:280px}
+.name-input{width:100%;padding:16px 18px;background:var(--s1);border:0.5px solid var(--border2);border-radius:var(--r);font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--text);outline:none;margin-bottom:12px;transition:.2s;text-align:center}
+.name-input:focus{border-color:rgba(0,229,160,0.4);box-shadow:0 0 0 3px rgba(0,229,160,0.07)}
+.name-input::placeholder{color:var(--t3)}
+.btn-primary{width:100%;padding:16px;background:var(--green);color:#07080f;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:.15s;letter-spacing:.01em}
+.btn-primary:active{transform:scale(.97)}
+
+/* MAIN REQUEST SCREEN */
+.user-chip{display:flex;align-items:center;gap:10px;background:var(--s1);border:0.5px solid var(--border2);border-radius:30px;padding:8px 16px 8px 8px;margin-bottom:32px;cursor:pointer}
+.user-av{width:32px;height:32px;border-radius:50%;background:var(--gd);border:0.5px solid rgba(0,229,160,0.25);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--green)}
+.user-name{font-size:13px;font-weight:500;color:var(--text)}
+.user-change{font-size:11px;color:var(--t3);margin-left:4px}
+
+/* BIG BUTTON */
+.big-btn-wrap{position:relative;margin-bottom:28px}
+.ring{position:absolute;inset:-16px;border-radius:50%;border:1.5px solid rgba(0,229,160,0.15);animation:spin 8s linear infinite}
+.ring2{position:absolute;inset:-28px;border-radius:50%;border:1px dashed rgba(0,229,160,0.08);animation:spin 14s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.big-btn{width:160px;height:160px;border-radius:50%;background:var(--gd);border:1.5px solid rgba(0,229,160,0.25);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative;z-index:1;gap:6px}
+.big-btn:active{transform:scale(.94)}
+.big-btn svg{width:44px;height:44px;stroke:var(--green);fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.6;transition:.3s}
+.big-btn-label{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);letter-spacing:.03em}
+.big-btn.requesting{background:rgba(79,158,255,0.12);border-color:rgba(79,158,255,0.3)}
+.big-btn.requesting svg{stroke:var(--blue)}
+.big-btn.requesting .big-btn-label{color:var(--blue)}
+.big-btn.approved{background:rgba(0,229,160,0.2);border-color:rgba(0,229,160,0.5)}
+.big-btn.denied{background:var(--rd);border-color:rgba(255,85,102,0.3)}
+.big-btn.denied svg{stroke:var(--red)}
+.big-btn.denied .big-btn-label{color:var(--red)}
+
+@keyframes pulseRing{0%{box-shadow:0 0 0 0 rgba(79,158,255,0.35)}70%{box-shadow:0 0 0 22px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.big-btn.requesting{animation:pulseRing 1.4s infinite}
+
+.status-txt{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;transition:.3s}
+.status-sub{font-size:13px;color:var(--t2);line-height:1.5;max-width:240px}
+
+.hs-status-pill{display:flex;align-items:center;gap:7px;background:var(--s1);border:0.5px solid var(--border);border-radius:30px;padding:8px 14px;margin-top:24px;font-size:13px;color:var(--t2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:.3s}
+.dot.on{background:var(--green);box-shadow:0 0 6px rgba(0,229,160,0.5)}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;font-weight:500;padding:10px 18px;border-radius:30px;transition:.35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;z-index:200;opacity:0;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="bg-glow" id="bgGlow"></div>
+
+<!-- SETUP SCREEN -->
+<div class="screen active" id="scr-setup">
+  <div class="setup-ico">👋</div>
+  <div class="setup-title">Hi! What's your name?</div>
+  <div class="setup-sub">Enter your name so your brother knows it's you requesting the hotspot.</div>
+  <input class="name-input" id="name-inp" type="text" placeholder="Your name…" maxlength="20" autocomplete="off">
+  <button class="btn-primary" onclick="saveName()">Continue →</button>
+</div>
+
+<!-- MAIN SCREEN -->
+<div class="screen" id="scr-main">
+  <div class="user-chip" onclick="changeName()">
+    <div class="user-av" id="av-init">??</div>
+    <span class="user-name" id="uname-lbl">You</span>
+    <span class="user-change">✎</span>
+  </div>
+
+  <div class="big-btn-wrap">
+    <div class="ring"></div>
+    <div class="ring2"></div>
+    <div class="big-btn" id="bigBtn" onclick="sendRequest()">
+      <svg viewBox="0 0 24 24"><path d="M1.5 8.5C5.2 4.8 9.4 3 12 3s6.8 1.8 10.5 5.5"/><path d="M5 12a9.9 9.9 0 017-2.9 9.9 9.9 0 017 2.9"/><path d="M8.5 15.5a5 5 0 013.5-1.5 5 5 0 013.5 1.5"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+      <span class="big-btn-label" id="btn-lbl">TAP TO REQUEST</span>
+    </div>
+  </div>
+
+  <div class="status-txt" id="stat-txt">Need Wi-Fi?</div>
+  <div class="status-sub" id="stat-sub">Tap the button to ask your brother to turn on the hotspot.</div>
+
+  <div class="hs-status-pill">
+    <div class="dot" id="hs-dot"></div>
+    <span id="hs-txt">Hotspot is off</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEVICE_KEY = 'hs_device_id';
+const NAME_KEY = 'hs_user_name';
+
+// Generate or get persistent device ID
+let deviceId = localStorage.getItem(DEVICE_KEY);
+if(!deviceId){ deviceId = 'dev_' + Math.random().toString(36).slice(2,10); localStorage.setItem(DEVICE_KEY, deviceId); }
+
+let userName = localStorage.getItem(NAME_KEY)||'';
+let state = 'idle'; // idle | requesting | approved | denied
+let reqTimeout;
+
+// On load
+if(userName){ showMain(); }
+
+function saveName(){
+  const n = document.getElementById('name-inp').value.trim();
+  if(!n){ toast('Please enter your name 😊'); return; }
+  userName = n;
+  localStorage.setItem(NAME_KEY, userName);
+  showMain();
+}
+
+function showMain(){
+  document.getElementById('scr-setup').classList.remove('active');
+  document.getElementById('scr-main').classList.add('active');
+  document.getElementById('uname-lbl').textContent = userName;
+  document.getElementById('av-init').textContent = initials(userName);
+  updateHSStatus(false);
+}
+
+function changeName(){
+  localStorage.removeItem(NAME_KEY);
+  location.reload();
+}
+
+function initials(n){ return n.split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||n.slice(0,2).toUpperCase(); }
+
+function sendRequest(){
+  if(state === 'requesting') return;
+  if(state === 'approved'){ toast('✅ Hotspot is already on!'); return; }
+  setState('requesting');
+  broadcast({type:'request', deviceId, name: userName, color: 1});
+  // Timeout after 30s
+  reqTimeout = setTimeout(()=>{ if(state==='requesting'){ setState('idle'); toast('⏱ No response. Try again.'); }}, 30000);
+}
+
+function setState(s){
+  state = s;
+  const btn = document.getElementById('bigBtn');
+  const lbl = document.getElementById('btn-lbl');
+  const txt = document.getElementById('stat-txt');
+  const sub = document.getElementById('stat-sub');
+  const glow = document.getElementById('bgGlow');
+  btn.className = 'big-btn' + (s!=='idle'?' '+s:'');
+  if(s==='idle'){ lbl.textContent='TAP TO REQUEST'; txt.textContent='Need Wi-Fi?'; sub.textContent='Tap the button to ask your brother to turn on the hotspot.'; glow.className='bg-glow'; }
+  if(s==='requesting'){ lbl.textContent='REQUESTING…'; txt.textContent='Waiting for approval…'; sub.textContent='Your brother will see a notification. Hang tight! ⏳'; glow.className='bg-glow'; }
+  if(s==='approved'){ lbl.textContent='CONNECTED ✓'; txt.textContent='Hotspot is ON! 🎉'; sub.textContent='You can connect to the Wi-Fi now. Enjoy!'; glow.className='bg-glow active'; updateHSStatus(true); }
+  if(s==='denied'){ lbl.textContent='DENIED'; txt.textContent='Request denied 😕'; sub.textContent='Your brother denied the request. Try asking again later.'; glow.className='bg-glow denied'; setTimeout(()=>setState('idle'),3000); }
+}
+
+function updateHSStatus(on){
+  document.getElementById('hs-dot').className = 'dot' + (on?' on':'');
+  document.getElementById('hs-txt').textContent = on ? 'Hotspot is ON — connect now!' : 'Hotspot is off';
+}
+
+function broadcast(data){
+  localStorage.setItem('hs_msg', JSON.stringify({...data, _t: Date.now()}));
+}
+
+window.addEventListener('storage', e => {
+  if(e.key !== 'hs_msg') return;
+  const d = JSON.parse(e.newValue||'{}');
+  if(d.type==='approved' && d.deviceId===deviceId){ clearTimeout(reqTimeout); setState('approved'); toast(d.auto?'⚡ Auto-approved! Hotspot ON':'✅ Approved! Hotspot ON'); }
+  if(d.type==='denied' && d.deviceId===deviceId){ clearTimeout(reqTimeout); setState('denied'); toast('🚫 Request denied'); }
+  if(d.type==='hs_status'){ updateHSStatus(d.on); if(!d.on && state==='approved') setState('idle'); }
+  if(d.type==='cancel'){ clearTimeout(reqTimeout); setState('idle'); }
+});
+
+// Name input enter key
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp = document.getElementById('name-inp');
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') saveName(); });
+});
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._to); t._to=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Name input submit on enter
+window.addEventListener('keydown', e=>{ if(e.key==='Enter' && document.getElementById('scr-setup').classList.contains('active')) saveName(); });
+</script>
+</body>
+</html>
